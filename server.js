@@ -25,23 +25,17 @@ app.get("/photos", async (req,res) => {
     const albumId =req.query.albumId
 
     try {
-        // Get data from Redis cache
-        const photos = await redisclient.get('photos')
-        if(photos != null) {
-            console.log('cache hit')
-            return res.json(JSON.parse(photos))
-        }
-            console.log('cache miss')
+            // Get data from Redis cache
+            const data = await getOrSetCache(`photos?albumId=${albumId}`, async()=>{
             const { data } = await axios.get(
                 "https://jsonplaceholder.typicode.com/photos",
                 { params: { albumId } }
             ) 
-             // Store in Redis cache
-            await redisclient.setEx('photos', DEFALUT_EXPIRATION, JSON.stringify(data))
-            
-            res.json(data)
-        
-         
+            return data
+        })
+
+        res.json(data)
+    
     } catch (error) {
         console.error(error)
         res.status(500).json({ error: "Server error" })
@@ -50,10 +44,43 @@ app.get("/photos", async (req,res) => {
 });
 
 app.get("/photos/:id", async (req, res)=> {
-    const { data } = await axios.get( `https://jsonplaceholder.typicode.com/photos/${req.params.id}`)
-    res.json(data)
+
+    try {
+            const data = await getOrSetCache(`photos:${req.params.id}`, async()=>{
+
+            const { data } = await axios.get(`https://jsonplaceholder.typicode.com/photos/${req.params.id}`) 
+            return data
+            })
+
+            res.json(data)
+
+        } catch (error) {
+            console.error(error)
+            res.status(500).json({ error: "Server error" })
+        }
 
 })
+
+async function getOrSetCache(key, cb) {
+    try {
+        // Get data from Redis cache
+        const photos = await redisclient.get(key)
+        if(photos != null) {
+            console.log('cache hit')
+            return JSON.parse(photos)
+        }
+            console.log('cache miss')
+            const freshData = await cb()
+             // Store in Redis cache
+            await redisclient.setEx(key, DEFALUT_EXPIRATION, JSON.stringify(freshData))   
+            return freshData
+        
+         
+    } catch (error) {
+        console.error(error)
+        throw error
+    }
+}
 
 app.listen(port, () =>{
     console.log(`App listening on port ${port}`)
