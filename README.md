@@ -2,7 +2,61 @@
 
 ## Overview
 This project is a Node.js Express server that implements Redis caching to optimize API data retrieval from JSONPlaceholder. By leveraging Redis, we significantly improve response times and reduce external API calls.
+## 🏗️ System Architecture
 
+### Mermaid Diagram
+```mermaid
+flowchart TD
+    A[Client Request] -->|Incoming Request| B{Route Handling}
+    
+    style A fill:#FFC300,stroke:#333,stroke-width:3px
+    style B fill:#DAF7A6,stroke:#333,stroke-width:2px
+    
+    B -->|/photos?albumId| C[Fetch Photos by Album ID]
+    B -->|/photos/:id| D[Fetch Single Photo by ID]
+    
+    style C fill:#FF5733,color:white,stroke:#333,stroke-width:2px
+    style D fill:#C70039,color:white,stroke:#333,stroke-width:2px
+    
+    C --> E{Check Redis Cache}
+    D --> F{Check Redis Cache}
+    
+    style E fill:#900C3F,color:white,stroke:#333,stroke-width:2px
+    style F fill:#581845,color:white,stroke:#333,stroke-width:2px
+    
+    E -->|Cache Hit| G[Return Cached Data]
+    F -->|Cache Hit| H[Return Cached Data]
+    
+    style G fill:#FFC300,stroke:#333,stroke-width:2px
+    style H fill:#FFC300,stroke:#333,stroke-width:2px
+    
+    E -->|Cache Miss| I[Fetch from JSONPlaceholder API]
+    F -->|Cache Miss| J[Fetch from JSONPlaceholder API]
+    
+    style I fill:#45B39D,color:white,stroke:#333,stroke-width:2px
+    style J fill:#5DADE2,color:white,stroke:#333,stroke-width:2px
+    
+    I --> K[Store in Redis Cache]
+    J --> L[Store in Redis Cache]
+    
+    style K fill:#EC7063,stroke:#333,stroke-width:2px
+    style L fill:#AF7AC5,stroke:#333,stroke-width:2px
+    
+    K --> M[Return Data to Client]
+    L --> N[Return Data to Client]
+    
+    style M fill:#F39C12,stroke:#333,stroke-width:2px
+    style N fill:#16A085,stroke:#333,stroke-width:2px
+```
+
+### Architecture Explanation
+The system architecture demonstrates a sophisticated caching mechanism:
+1. Client sends a request to specific endpoints
+2. Routes are processed through a caching check
+3. Redis cache is consulted first
+4. On cache miss, data is fetched from JSONPlaceholder API
+5. Fresh data is stored in Redis for future requests
+   
 ## 🌟 Features
 - **Efficient Caching**: Intelligent Redis caching mechanism
 - **Flexible Routing**: Handle photo retrieval by album or individual ID
